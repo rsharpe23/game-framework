@@ -1,7 +1,7 @@
-import glUtil from "./gl-util.js";
-import matrix from "./matrix/index.js";
+import glUtil from "./lib/gl-util.js";
+import matrix from "./lib/matrix/index.js";
 
-import shaders from "./shaders.js";
+import shaders from "./assets/shaders/default.js"
 import program from "./program.js";
 
 import light from "./light.js";
@@ -14,9 +14,59 @@ const { mat3, mat4 } = matrix;
 
 const pMatrix = mat4.create();
 const mvMatrix = mat4.create(); 
-const nMatrix = mat3.create();
-
+const nMatrix = mat3.create(); 
 const drawableObjects = getDrawableObjects(glu);
+
+// Создание текстуры
+const u_Sampler = gl.getUniformLocation(prog, 'u_Sampler');
+const a_TexCoord = gl.getAttribLocation(prog, 'a_TexCoord');
+gl.enableVertexAttribArray(a_TexCoord);
+
+const tbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, tbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+  0.0, 0.0,
+  0.0, 1.0,
+  1.0, 1.0,
+  1.0, 0.0,
+
+  0.0, 0.0,
+  0.0, 1.0,
+  1.0, 1.0,
+  1.0, 0.0,
+
+  0.0, 0.0,
+  0.0, 1.0,
+  1.0, 1.0,
+  1.0, 0.0,
+
+  0.0, 0.0,
+  0.0, 1.0,
+  1.0, 1.0,
+  1.0, 0.0,
+
+  0.0, 0.0,
+  0.0, 1.0,
+  1.0, 1.0,
+  1.0, 0.0,
+
+  0.0, 0.0,
+  0.0, 1.0,
+  1.0, 1.0,
+  1.0, 0.0,
+]), gl.STATIC_DRAW);
+
+const texture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, texture);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+// texImage2D() должен вызываться после привязки объекта texture
+const img = document.getElementById('texture');
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, 
+  gl.UNSIGNED_BYTE, img);
+// ---------------
 
 gl.clearColor(0.3, 0.6, 0.9, 1.0);
 gl.enable(gl.DEPTH_TEST);
@@ -53,6 +103,13 @@ for (const { vbo, nbo, ibo, transform, material } of drawableObjects) {
 
   glu.vertexAttribPointer(prog.a_Pos, vbo);
   glu.vertexAttribPointer(prog.a_Normal, nbo);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, tbo);
+  gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.uniform1i(u_Sampler, 0);
   
   glu.drawElements(ibo);
 }
@@ -88,8 +145,6 @@ function attachData(prog) {
   prog.attachUniform('u_SpecularMaterialColor');
 }
 
-// DrawableObject должен хранить именно ссылки, а не конкретные 
-// значения, чтобы была возможность менять их в рантайме.
 function getDrawableObjects(glu) {
   const drawableObjects = [];
   for (const { transform, geometry, material } of objects) {

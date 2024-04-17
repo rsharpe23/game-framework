@@ -7,8 +7,10 @@ export default (gl, glu, { vert, frag }) => {
     prog[attrName] = attr;
   };
 
-  prog.attachUniform = uniformName => 
-    gl.getUniformLocation(prog, uniformName);
+  prog.attachUniform = uniformName => {
+    const uniform = gl.getUniformLocation(prog, uniformName);
+    prog[uniformName] = uniform;
+  };
 
   return prog;
 };
