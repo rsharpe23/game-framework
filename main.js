@@ -94,9 +94,9 @@ function initProjectionAndModelView(pMatrix, mvMatrix) {
 
 function getDrawableObjects(glu, objects) {
   const drawableObjects = [];
-  for (const obj of objects)
+  for (const obj of objects) {
     drawableObjects.push(getDrawableObject(glu, obj));
-
+  }
   return drawableObjects;
 }
 
