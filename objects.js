@@ -135,8 +135,8 @@ export default [
 
   {
     transform: {
-      position: [2.0, 0.0, 0.0],
-      rotation: [1.0, 1.0, 0.0, Math.PI / 8],
+      position: [1.0, 0.0, 0.0],
+      rotation: [1.0, 0.0, 1.0, Math.PI / 4],
       scale: [1.0, 1.0, 1.0],
     },
   

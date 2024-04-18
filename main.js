@@ -29,11 +29,15 @@ gl.uniformMatrix4fv(prog.u_PMatrix, false, pMatrix);
 setLightUniforms(gl, prog, light);
 
 for (const { transform, material, buffers } of drawableObjects) {
+  matrix.push(mvMatrix);
+
   transformMatrix(mvMatrix, transform);
   gl.uniformMatrix4fv(prog.u_MVMatrix, false, mvMatrix);
 
-  matrix.mat3.normalFromMat4(nMatrix, mvMatrix);
+  glMatrix.mat3.normalFromMat4(nMatrix, mvMatrix);
   gl.uniformMatrix3fv(prog.u_NMatrix, false, nMatrix);
+
+  matrix.pop(mvMatrix);
 
   setMaterialUniforms(gl, prog, material);
   glu.setTexture(prog.u_Sampler, material.texture);
@@ -77,12 +81,12 @@ function attachData(prog) {
 }
 
 function getMatrixList() {
-  const { mat3, mat4 } = matrix;
+  const { mat3, mat4 } = glMatrix;
   return [mat4.create(), mat4.create(), mat3.create()];
 }
 
 function initProjectionAndModelView(pMatrix, mvMatrix) {
-  matrix.mat4.perspective(pMatrix, 1.04, 640 / 480, 0.1, 100.0);
+  glMatrix.mat4.perspective(pMatrix, 1.04, 640 / 480, 0.1, 100.0);
   matrix.lookAt(mvMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0]);
 }
 
@@ -142,7 +146,7 @@ function setAttributePointers(glu, prog, buffers) {
 }
 
 function transformMatrix(mvMatrix, { position, rotation, scale }) {
-  // matrix.mat4.identity(mat);
+  // matrix.mat4.identity(mvMatrix);
   matrix.translate(mvMatrix, position);
   matrix.rotate(mvMatrix, rotation);
   matrix.scale(mvMatrix, scale);
