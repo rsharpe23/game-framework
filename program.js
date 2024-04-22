@@ -3,7 +3,6 @@ export default (gl, glu, { vert, frag }) => {
 
   prog.attachAttribute = attrName => {
     const attr = gl.getAttribLocation(prog, attrName);
-    gl.enableVertexAttribArray(attr);
     prog[attrName] = attr;
   };
 

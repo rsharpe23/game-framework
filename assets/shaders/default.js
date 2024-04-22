@@ -3,7 +3,8 @@ import glsl from "../../lib/glsl.js";
 export default {
   vert: glsl`
     uniform mat4 u_PMatrix;
-    uniform mat4 u_MVMatrix;
+    uniform mat4 u_VMatrix;
+    uniform mat4 u_MMatrix;
     uniform mat3 u_NMatrix;
 
     uniform vec3 u_AmbientMaterialColor;
@@ -28,7 +29,7 @@ export default {
     vec4 getColor(float, float);
 
     void main() {
-      gl_Position = u_PMatrix * u_MVMatrix * a_Pos;
+      gl_Position = u_PMatrix * u_VMatrix * u_MMatrix * a_Pos;
       v_TexCoord = a_TexCoord;
       
       vec3 tPos = getTransformedPos();
@@ -47,7 +48,9 @@ export default {
     }
 
     vec3 getTransformedPos() {
-      vec4 pos = u_MVMatrix * a_Pos;
+      // Если умножать позицию на u_MVMatrix тогда получится баг 
+      // с освещением, когда свет двигается вместе с камерой
+      vec4 pos = u_MMatrix * a_Pos;
       return pos.xyz / pos.w; 
     }
 

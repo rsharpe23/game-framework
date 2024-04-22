@@ -11,7 +11,7 @@ const gl = getContext();
 const glu = glUtil(gl);
 const prog = getProgram(gl, glu);
 
-const [pMatrix, mvMatrix, nMatrix] = getMatrixList();
+const { pMatrix, vMatrix, mMatrix, nMatrix } = getMatrices();
 const drawableObjects = getDrawableObjects(glu, objects);
 
 gl.clearColor(0.3, 0.6, 0.9, 1.0);
@@ -23,27 +23,30 @@ gl.useProgram(prog);
 gl.viewport(0, 0, 640, 480);
 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-initProjectionAndModelView(pMatrix, mvMatrix);
+initViewProjectionMatrices(pMatrix, vMatrix);
 gl.uniformMatrix4fv(prog.u_PMatrix, false, pMatrix);
+gl.uniformMatrix4fv(prog.u_VMatrix, false, vMatrix);
 
 setLightUniforms(gl, prog, light);
 
 for (const { transform, material, buffers } of drawableObjects) {
-  matrix.push(mvMatrix);
+  matrix.push(mMatrix);
 
-  transformMatrix(mvMatrix, transform);
-  gl.uniformMatrix4fv(prog.u_MVMatrix, false, mvMatrix);
+  transformMatrix(mMatrix, transform);
+  gl.uniformMatrix4fv(prog.u_MMatrix, false, mMatrix);
 
-  glMatrix.mat3.normalFromMat4(nMatrix, mvMatrix);
+  glMatrix.mat3.normalFromMat4(nMatrix, mMatrix);
   gl.uniformMatrix3fv(prog.u_NMatrix, false, nMatrix);
 
-  matrix.pop(mvMatrix);
+  matrix.pop(mMatrix);
 
   setMaterialUniforms(gl, prog, material);
   glu.setTexture(prog.u_Sampler, material.texture);
 
   setAttributePointers(glu, prog, buffers);
 
+  // Если отрисовывается один и тот же объект несколько раз подряд, 
+  // тогда достаточно привязать его буферы только один раз.
   glu.drawElements(buffers.ibo);
 }
 
@@ -66,7 +69,8 @@ function attachData(prog) {
   prog.attachAttribute('a_TexCoord');
 
   prog.attachUniform('u_PMatrix');
-  prog.attachUniform('u_MVMatrix');
+  prog.attachUniform('u_VMatrix');
+  prog.attachUniform('u_MMatrix');
   prog.attachUniform('u_NMatrix');
 
   prog.attachUniform('u_AmbientLightColor');
@@ -80,14 +84,19 @@ function attachData(prog) {
   prog.attachUniform('u_Sampler');
 }
 
-function getMatrixList() {
+function getMatrices() {
   const { mat3, mat4 } = glMatrix;
-  return [mat4.create(), mat4.create(), mat3.create()];
+  return {
+    pMatrix: mat4.create(mat4), 
+    vMatrix: mat4.create(mat4), 
+    mMatrix: mat4.create(mat4), 
+    nMatrix: mat3.create(mat3)
+  };
 }
 
-function initProjectionAndModelView(pMatrix, mvMatrix) {
+function initViewProjectionMatrices(pMatrix, vMatrix) {
   glMatrix.mat4.perspective(pMatrix, 1.04, 640 / 480, 0.1, 100.0);
-  matrix.lookAt(mvMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0]);
+  matrix.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0]);
 }
 
 // --------
@@ -106,17 +115,18 @@ function getDrawableObject(glu, { transform, geometry, material: m }) {
   return { transform, material, buffers };
 }
 
-function getBuffers(glu, { vertices, normals, uvs, indices }) {
-  const vbo = glu.createBuffer(vertices, 3);
-  const nbo = glu.createBuffer(normals, 3);
-  const tbo = glu.createBuffer(uvs, 2);
-  const ibo = glu.createIndexBuffer(indices);
-  return { vbo, nbo, tbo, ibo };
+function getBuffers(glu, { vertices, normals, texCoords, indices }) {
+  return { 
+    vbo: glu.createBuffer(vertices, 3), 
+    nbo: glu.createBuffer(normals, 3), 
+    tbo: glu.createBuffer(texCoords, 2), 
+    ibo: glu.createIndexBuffer(indices), 
+  };
 }
 
 function getMaterial(glu, { ambientColor, diffuseColor, specularColor }) {
   const texture = getTexture(glu);
-  return { ambientColor, diffuseColor, specularColor, texture };
+  return { ambientColor, diffuseColor, specularColor, texture, };
 }
 
 function getTexture(glu) {
@@ -146,7 +156,6 @@ function setAttributePointers(glu, prog, buffers) {
 }
 
 function transformMatrix(mvMatrix, { position, rotation, scale }) {
-  // matrix.mat4.identity(mvMatrix);
   matrix.translate(mvMatrix, position);
   matrix.rotate(mvMatrix, rotation);
   matrix.scale(mvMatrix, scale);

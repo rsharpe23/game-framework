@@ -1,5 +1,7 @@
+import glsl from "../../lib/glsl.js"; 
+
 export default {
-  vert: `
+  vert: glsl`
     attribute vec4 a_Pos;
     uniform mat4 u_PMatrix;
     uniform mat4 u_MVMatrix;
@@ -9,7 +11,7 @@ export default {
     }
   `,
 
-  frag: `
+  frag: glsl`
     void main() {
       gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
